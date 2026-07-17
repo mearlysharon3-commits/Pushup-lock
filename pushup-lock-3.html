@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>RESISTANCE — Push-up Lock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0E0F0F;
+    --ink-2: #17181A;
+    --iron: #FF5A1F;
+    --iron-dim: #B8451A;
+    --steel: #8A8F92;
+    --bone: #F2F1ED;
+    --line: #2A2C2E;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--ink);
+    color: var(--bone);
+    font-family: 'Oswald', sans-serif;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100vh;
+    width: 100vw;
+    position: relative;
+  }
+
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px;
+    animation: fadeIn 0.4s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .screen { animation: none; }
+  }
+
+  /* ---------- Header ---------- */
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--steel);
+    text-transform: uppercase;
+    margin: 0 0 6px 0;
+  }
+
+  .title {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0;
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .title .accent { color: var(--iron); }
+
+  /* ---------- Setup screen ---------- */
+  .setup-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 28px;
+  }
+
+  .rep-select {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    margin: 12px 0 4px;
+  }
+
+  .rep-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--ink-2);
+    color: var(--bone);
+    font-size: 26px;
+    font-family: 'Oswald', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .rep-btn:active { background: var(--iron-dim); border-color: var(--iron); }
+
+  .rep-count {
+    font-size: 72px;
+    font-weight: 700;
+    min-width: 120px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .rep-label {
+    text-align: center;
+    color: var(--steel);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-top: -18px;
+  }
+
+  .primary-btn {
+    background: var(--iron);
+    color: var(--ink);
+    border: none;
+    border-radius: 4px;
+    padding: 18px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s, background 0.15s;
+  }
+  .primary-btn:active { transform: scale(0.98); background: #FF7440; }
+
+  .ghost-btn {
+    background: transparent;
+    color: var(--steel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .info-line {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--steel);
+    line-height: 1.6;
+    border-left: 2px solid var(--iron);
+    padding-left: 12px;
+  }
+
+  /* ---------- Camera screen ---------- */
+  .cam-wrap {
+    position: relative;
+    flex: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid var(--line);
+    margin-top: 12px;
+  }
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    display: block;
+  }
+
+  canvas#motionCanvas { display: none; }
+
+  .cam-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px;
+  }
+
+  .plate-stack {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .plate {
+    width: 18px;
+    border-radius: 2px;
+    background: var(--line);
+    transition: background 0.25s, box-shadow 0.25s;
+  }
+  .plate.filled {
+    background: var(--iron);
+    box-shadow: 0 0 12px rgba(255,90,31,0.6);
+  }
+
+  .count-badge {
+    align-self: center;
+    background: rgba(14,15,15,0.78);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    color: var(--bone);
+    text-transform: uppercase;
+  }
+  .count-badge b {
+    color: var(--iron);
+    font-size: 16px;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+  }
+
+  .status-pill {
+    align-self: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(14,15,15,0.78);
+    border: 1px solid var(--line);
+    color: var(--steel);
+  }
+  .status-pill.down { color: var(--iron); border-color: var(--iron-dim); }
+  .status-pill.up { color: #6FCF97; border-color: #2E5B44; }
+
+  .cam-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .cam-controls .ghost-btn { flex: 1; text-align: center; }
+
+  /* ---------- Unlock screen ---------- */
+  .unlock-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    text-align: center;
+  }
+
+  .check {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    border: 2px solid var(--iron);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pop 0.5s cubic-bezier(.2,1.4,.4,1);
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .check { animation: none; }
+  }
+
+  .check svg { width: 34px; height: 34px; }
+
+  .unlock-title {
+    font-size: 30px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  .unlock-sub {
+    color: var(--steel);
+    font-size: 14px;
+    max-width: 280px;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .code-box {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--iron);
+    background: var(--ink-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 18px 28px;
+  }
+
+  .code-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--steel);
+    letter-spacing: 0.08em;
+    max-width: 260px;
+    line-height: 1.6;
+  }
+
+  .error-box {
+    color: var(--iron);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-align: center;
+    padding: 10px;
+  }
+
+  /* ---------- Session length selector ---------- */
+  .session-select {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .session-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--ink-2);
+    color: var(--steel);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.15s;
+  }
+  .session-chip.active {
+    border-color: var(--iron);
+    color: var(--iron);
+    background: rgba(255,90,31,0.08);
+  }
+
+  .setup-block { margin-bottom: 4px; }
+
+  .block-label {
+    text-align: center;
+    color: var(--steel);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* ---------- Countdown ring ---------- */
+  .countdown-wrap {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .countdown-wrap svg { transform: rotate(-90deg); }
+
+  .countdown-track {
+    fill: none;
+    stroke: var(--line);
+    stroke-width: 6;
+  }
+
+  .countdown-fill {
+    fill: none;
+    stroke: var(--iron);
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear;
+  }
+
+  .countdown-fill.warn {
+    stroke: #E0B03A;
+  }
+
+  .countdown-fill.critical {
+    stroke: #E0483A;
+  }
+
+  .countdown-label {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .countdown-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--bone);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .countdown-unit {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--steel);
+    text-transform: uppercase;
+  }
+
+  .setup-instructions {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--steel);
+    line-height: 1.7;
+    text-align: left;
+    background: var(--ink-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 14px 16px;
+    max-width: 300px;
+  }
+  .setup-instructions b { color: var(--bone); }
+  .setup-instructions .step-num { color: var(--iron); }
+
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--steel);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .expired-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #E0483A;
+    border: 1px solid #5A2620;
+    background: rgba(224,72,58,0.08);
+    border-radius: 999px;
+    padding: 8px 18px;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useRef, useEffect, useCallback } = React;
+
+function genCode() {
+  const n = Math.floor(1000 + Math.random() * 9000);
+  return String(n);
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="#FF5A1F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+  );
+}
+
+const SESSION_OPTIONS = [15, 30, 60, 120];
+
+function SetupScreen({ target, setTarget, sessionMin, setSessionMin, onStart, camError }) {
+  return (
+    <div className="screen">
+      <p className="eyebrow">Resistance / Setup</p>
+      <h1 className="title">Earn your<br/><span className="accent">unlock.</span></h1>
+      <div className="setup-body">
+        <div className="setup-block">
+          <div className="rep-select">
+            <button className="rep-btn" onClick={() => setTarget(Math.max(1, target - 1))} aria-label="Decrease reps">−</button>
+            <div className="rep-count">{target}</div>
+            <button className="rep-btn" onClick={() => setTarget(target + 1)} aria-label="Increase reps">+</button>
+          </div>
+          <p className="rep-label">push-ups required</p>
+        </div>
+
+        <div className="setup-block">
+          <p className="block-label">code valid for</p>
+          <div className="session-select">
+            {SESSION_OPTIONS.map(min => (
+              <button
+                key={min}
+                className={"session-chip " + (sessionMin === min ? "active" : "")}
+                onClick={() => setSessionMin(min)}
+              >
+                {min < 60 ? min + 'm' : (min / 60) + 'h'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <p className="info-line">
+          Camera watches your torso rise and fall.<br/>
+          Full range of motion counts as one rep.<br/>
+          Finishing generates a timed code — enter it as your
+          Screen Time / Digital Wellbeing override.
+        </p>
+        {camError && <p className="error-box">{camError}</p>}
+        <button className="primary-btn" onClick={onStart}>Start camera</button>
+      </div>
+    </div>
+  );
+}
+
+function CameraScreen({ target, onComplete, onCancel }) {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+  const [count, setCount] = useState(0);
+  const [phase, setPhase] = useState('ready'); // ready | down | up
+  const [error, setError] = useState(null);
+
+  const stateRef = useRef({
+    baseline: null,
+    calibrating: true,
+    calibFrames: 0,
+    motionHistory: [],
+    lastRepTime: 0,
+    phase: 'up',
+  });
+
+  useEffect(() => {
+    let raf;
+    let cancelled = false;
+
+    async function init() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 640 } },
+          audio: false,
+        });
+        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        loop();
+      } catch (e) {
+        setError('Camera access denied or unavailable. Check permissions and try again.');
+      }
+    }
+
+    function loop() {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (!video || !canvas || video.readyState < 2) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
+      const w = 80, h = 106;
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, w, h);
+      const frame = ctx.getImageData(0, 0, w, h).data;
+
+      // Compute brightness centroid in upper 2/3 of frame (torso/shoulder region)
+      let totalWeight = 0;
+      let weightedY = 0;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const idx = (y * w + x) * 4;
+          const lum = 0.299 * frame[idx] + 0.587 * frame[idx + 1] + 0.114 * frame[idx + 2];
+          totalWeight += lum;
+          weightedY += lum * y;
+        }
+      }
+      const centroidY = totalWeight > 0 ? weightedY / totalWeight : h / 2;
+      const normY = centroidY / h; // 0 (top) - 1 (bottom)
+
+      const st = stateRef.current;
+
+      if (st.calibrating) {
+        st.calibFrames++;
+        st.motionHistory.push(normY);
+        if (st.calibFrames > 20) {
+          const avg = st.motionHistory.reduce((a, b) => a + b, 0) / st.motionHistory.length;
+          st.baseline = avg;
+          st.calibrating = false;
+          st.motionHistory = [];
+        }
+      } else {
+        st.motionHistory.push(normY);
+        if (st.motionHistory.length > 6) st.motionHistory.shift();
+        const smoothed = st.motionHistory.reduce((a, b) => a + b, 0) / st.motionHistory.length;
+        const delta = smoothed - st.baseline;
+
+        // delta > threshold means centroid moved down (body lowered = "down" position)
+        const DOWN_T = 0.045;
+        const UP_T = 0.02;
+        const now = Date.now();
+
+        if (st.phase === 'up' && delta > DOWN_T) {
+          st.phase = 'down';
+          setPhase('down');
+        } else if (st.phase === 'down' && delta < UP_T) {
+          if (now - st.lastRepTime > 500) {
+            st.lastRepTime = now;
+            st.phase = 'up';
+            setPhase('up');
+            setCount(c => {
+              const nc = c + 1;
+              return nc;
+            });
+          }
+        }
+      }
+
+      raf = requestAnimationFrame(loop);
+    }
+
+    init();
+
+    return () => {
+      cancelled = true;
+      if (raf) cancelAnimationFrame(raf);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (count >= target) {
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+      onComplete();
+    }
+  }, [count, target]);
+
+  if (error) {
+    return (
+      <div className="screen">
+        <p className="eyebrow">Resistance / Camera</p>
+        <h1 className="title">Camera<br/><span className="accent">blocked.</span></h1>
+        <div className="setup-body">
+          <p className="error-box">{error}</p>
+          <button className="ghost-btn" onClick={onCancel}>Back</button>
+        </div>
+      </div>
+    );
+  }
+
+  const plates = Array.from({ length: target });
+
+  return (
+    <div className="screen">
+      <p className="eyebrow">Resistance / In Progress</p>
+      <h1 className="title">Get down<br/><span className="accent">and earn it.</span></h1>
+      <div className="cam-wrap">
+        <video ref={videoRef} playsInline muted></video>
+        <canvas id="motionCanvas" ref={canvasRef}></canvas>
+        <div className="cam-overlay">
+          <div className={"status-pill " + (phase === 'down' ? 'down' : 'up')}>
+            {phase === 'down' ? '↓ lowering' : '↑ ready'}
+          </div>
+          <div className="count-badge">
+            <b>{count}</b> / {target} reps
+          </div>
+        </div>
+      </div>
+      <div className="plate-stack" style={{marginTop: 12}}>
+        {plates.map((_, i) => (
+          <div key={i} className={"plate " + (i < count ? "filled" : "")} style={{height: 10 + (i % 3) * 3}}></div>
+        ))}
+      </div>
+      <div className="cam-controls">
+        <button className="ghost-btn" onClick={() => { if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop()); onCancel(); }}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+const RING_R = 58;
+const RING_C = 2 * Math.PI * RING_R;
+
+function formatTime(totalSeconds) {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function UnlockScreen({ code, target, sessionMin, expiresAt, onReset, onExpire }) {
+  const totalSeconds = sessionMin * 60;
+  const [remaining, setRemaining] = useState(() => Math.max(0, Math.round((expiresAt - Date.now()) / 1000)));
+
+  useEffect(() => {
+    const iv = setInterval(() => {
+      const rem = Math.max(0, Math.round((expiresAt - Date.now()) / 1000));
+      setRemaining(rem);
+      if (rem <= 0) {
+        clearInterval(iv);
+        onExpire();
+      }
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [expiresAt]);
+
+  const frac = totalSeconds > 0 ? remaining / totalSeconds : 0;
+  const offset = RING_C * (1 - frac);
+  const ringClass = frac < 0.15 ? 'critical' : frac < 0.4 ? 'warn' : '';
+
+  return (
+    <div className="screen">
+      <p className="eyebrow">Resistance / Complete</p>
+      <div className="unlock-body">
+        <div className="check"><CheckIcon /></div>
+        <h1 className="unlock-title">Unlocked.</h1>
+        <p className="unlock-sub">{target} push-ups done. You earned this.</p>
+
+        <div className="code-box">{code}</div>
+
+        <div className="countdown-wrap">
+          <svg width="130" height="130" viewBox="0 0 130 130">
+            <circle className="countdown-track" cx="65" cy="65" r={RING_R}></circle>
+            <circle
+              className={"countdown-fill " + ringClass}
+              cx="65" cy="65" r={RING_R}
+              strokeDasharray={RING_C}
+              strokeDashoffset={offset}
+            ></circle>
+          </svg>
+          <div className="countdown-label">
+            <div className="countdown-time">{formatTime(remaining)}</div>
+            <div className="countdown-unit">until re-lock</div>
+          </div>
+        </div>
+
+        <div className="setup-instructions">
+          <b>Pair with your phone's real limiter:</b><br/>
+          <span className="step-num">1.</span> iOS: Settings → Screen Time → App Limits → set this app's screen time limit to {sessionMin}m, enable "Block at End of Limit."<br/>
+          <span className="step-num">2.</span> Android: Settings → Digital Wellbeing → App Timers → same idea.<br/>
+          <span className="step-num">3.</span> Use the code above only as your own proof-of-work — the OS enforces the actual block.
+        </div>
+
+        <button className="ghost-btn" onClick={onReset}>Lock again now</button>
+      </div>
+    </div>
+  );
+}
+
+function ExpiredScreen({ onReset }) {
+  return (
+    <div className="screen">
+      <p className="eyebrow">Resistance / Expired</p>
+      <div className="unlock-body">
+        <div className="expired-badge">Session ended</div>
+        <h1 className="unlock-title">Time's up.</h1>
+        <p className="unlock-sub">Your code has expired. Earn the next one.</p>
+        <button className="primary-btn" onClick={onReset}>Do more push-ups</button>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [stage, setStage] = useState('setup'); // setup | camera | unlocked | expired
+  const [target, setTarget] = useState(10);
+  const [sessionMin, setSessionMin] = useState(30);
+  const [code, setCode] = useState('');
+  const [expiresAt, setExpiresAt] = useState(null);
+
+  const handleStart = () => setStage('camera');
+  const handleComplete = () => {
+    setCode(genCode());
+    setExpiresAt(Date.now() + sessionMin * 60 * 1000);
+    setStage('unlocked');
+  };
+  const handleReset = () => {
+    setStage('setup');
+    setCode('');
+    setExpiresAt(null);
+  };
+  const handleExpire = () => {
+    setStage('expired');
+  };
+
+  return (
+    <React.Fragment>
+      {stage === 'setup' && (
+        <SetupScreen
+          target={target}
+          setTarget={setTarget}
+          sessionMin={sessionMin}
+          setSessionMin={setSessionMin}
+          onStart={handleStart}
+        />
+      )}
+      {stage === 'camera' && (
+        <CameraScreen target={target} onComplete={handleComplete} onCancel={() => setStage('setup')} />
+      )}
+      {stage === 'unlocked' && (
+        <UnlockScreen
+          code={code}
+          target={target}
+          sessionMin={sessionMin}
+          expiresAt={expiresAt}
+          onReset={handleReset}
+          onExpire={handleExpire}
+        />
+      )}
+      {stage === 'expired' && (
+        <ExpiredScreen onReset={handleReset} />
+      )}
+    </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
